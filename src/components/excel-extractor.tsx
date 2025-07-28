@@ -4,10 +4,11 @@ import { useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { UploadCloud, File as FileIcon, Loader2, Download, VenetianMask, AlertCircle, CheckCircle, Clock, Expand } from 'lucide-react';
+import { UploadCloud, File as FileIcon, Loader2, Download, VenetianMask, AlertCircle, CheckCircle, Clock, Expand, FileCode } from 'lucide-react';
 import { suggestMetadata, SuggestMetadataOutput } from '@/ai/flows/suggest-metadata';
 import { processExcel, ProcessConfig } from '@/lib/excel-processor';
 import { exportToCsv } from '@/lib/csv-utils';
+import { exportToHtml } from '@/lib/html-utils';
 import { cn } from '@/lib/utils';
 
 import { Button } from '@/components/ui/button';
@@ -187,6 +188,12 @@ export default function ExcelExtractor() {
   const handleExportCsv = () => {
     if (extractedData) {
       exportToCsv(extractedData, 'RegistroAsistenciaDepurado.csv');
+    }
+  };
+  
+  const handleExportHtml = () => {
+    if (extractedData) {
+      exportToHtml(extractedData, 'RegistroAsistenciaDepurado.html');
     }
   };
   
@@ -375,7 +382,11 @@ export default function ExcelExtractor() {
                   </Dialog>
                   <Button onClick={handleExportCsv} size="sm" variant="outline">
                     <Download className="mr-2 h-4 w-4" />
-                    Export CSV
+                    CSV
+                  </Button>
+                  <Button onClick={handleExportHtml} size="sm" variant="outline">
+                    <FileCode className="mr-2 h-4 w-4" />
+                    HTML
                   </Button>
                 </div>
               )}
