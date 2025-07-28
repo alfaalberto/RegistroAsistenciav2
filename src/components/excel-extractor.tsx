@@ -310,12 +310,15 @@ export default function ExcelExtractor() {
                               const cellValue = row[header];
                               const isNoRegistro = cellValue === 'NO HAY REGISTRO';
                               const isRegistroIncompleto = cellValue === 'REGISTRO INCOMPLETO';
+                              const isHorasInsuficientes = typeof cellValue === 'number' && cellValue < 7.75;
+
                               return (
                                 <TableCell
                                   key={`${rowIndex}-${header}`}
                                   className={cn({
                                     'text-destructive font-semibold': isNoRegistro,
                                     'text-yellow-500 font-semibold': isRegistroIncompleto,
+                                    'text-orange-400 font-semibold': isHorasInsuficientes,
                                   })}
                                 >
                                   {String(cellValue)}
