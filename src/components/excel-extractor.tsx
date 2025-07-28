@@ -294,21 +294,23 @@ export default function ExcelExtractor() {
                 </div>
               )}
               {!isProcessing && extractedData && (
-                <ScrollArea className="w-full whitespace-nowrap rounded-md border max-h-[60vh]">
-                  <Table>
-                    <TableHeader className="sticky top-0 bg-card">
-                      <TableRow>
-                        {tableHeaders.map(header => <TableHead key={header}>{header}</TableHead>)}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {extractedData.map((row, rowIndex) => (
-                        <TableRow key={rowIndex}>
-                          {tableHeaders.map(header => <TableCell key={`${rowIndex}-${header}`}>{String(row[header])}</TableCell>)}
+                <ScrollArea className="w-full whitespace-nowrap rounded-md border">
+                  <div className="max-h-[60vh] overflow-auto">
+                    <Table>
+                      <TableHeader className="sticky top-0 bg-card">
+                        <TableRow>
+                          {tableHeaders.map(header => <TableHead key={header}>{header}</TableHead>)}
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {extractedData.map((row, rowIndex) => (
+                          <TableRow key={rowIndex}>
+                            {tableHeaders.map(header => <TableCell key={`${rowIndex}-${header}`}>{String(row[header])}</TableCell>)}
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                   <ScrollBar orientation="horizontal" />
                 </ScrollArea>
               )}
