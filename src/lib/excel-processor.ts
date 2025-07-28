@@ -13,18 +13,18 @@ function cleanData(data: any[][]): any[][] {
 
   if (filteredData.length === 0) return [];
 
+  // Find and remove completely empty columns
+  const colCount = Math.max(...filteredData.map(row => row.length));
   const emptyColumnIndices = new Set<number>();
-  if (filteredData.length > 0) {
-    const colCount = Math.max(...filteredData.map(row => row.length));
-    for (let j = 0; j < colCount; j++) {
-      if (filteredData.every(row => !row[j])) {
-        emptyColumnIndices.add(j);
-      }
+
+  for (let j = 0; j < colCount; j++) {
+    if (filteredData.every(row => row[j] === null || row[j] === undefined || row[j] === '')) {
+      emptyColumnIndices.add(j);
     }
   }
 
   if (emptyColumnIndices.size > 0) {
-    return filteredData.map(row => row.filter((_, j) => !emptyColumnIndices.has(j)));
+    filteredData = filteredData.map(row => row.filter((_, j) => !emptyColumnIndices.has(j)));
   }
   
   return filteredData;
@@ -46,16 +46,25 @@ export async function processExcel(file: File, config: ProcessConfig): Promise<R
   const records: Record<string, any>[] = [];
   const days = config.days.split(',').map(d => d.trim()).filter(d => d);
 
-  let i = 0;
-  while (i < data.length) {
+  for (let i = 0; i < data.length - 1; i++) {
     const row = data[i];
-    if (typeof row?.[0] === 'string' && row[0].includes('ID')) {
-      const idRow = row;
-      const dateRow = data[i + 1] || [];
+    const nextRow = data[i+1];
 
-      const id = idRow[2];
-      const name = idRow[4];
-      const department = idRow[6];
+    const isIdRow = row.some(cell => typeof cell === 'string' && cell.includes('ID :')) && 
+                    row.some(cell => typeof cell === 'string' && cell.includes('Nombre :')) &&
+                    row.some(cell => typeof cell === 'string' && cell.includes('Dept. :'));
+
+    if (isIdRow) {
+      const idIndex = row.findIndex(cell => typeof cell === 'string' && cell.includes('ID :'));
+      const nameIndex = row.findIndex(cell => typeof cell === 'string' && cell.includes('Nombre :'));
+      const deptIndex = row.findIndex(cell => typeof cell === 'string' && cell.includes('Dept. :'));
+
+      const id = idIndex !== -1 && idIndex + 2 < row.length ? row[idIndex + 2] : null;
+      const name = nameIndex !== -1 && nameIndex + 2 < row.length ? row[nameIndex + 2] : null;
+      const department = deptIndex !== -1 && deptIndex + 2 < row.length ? row[deptIndex + 2] : null;
+
+      // The next row should contain the attendance data
+      const dateRow = nextRow || [];
 
       const dayRecords: { [key: string]: any } = {};
       days.forEach((day, index) => {
@@ -64,16 +73,16 @@ export async function processExcel(file: File, config: ProcessConfig): Promise<R
         dayRecords[key] = (value !== null && value !== undefined) ? value : "";
       });
       
-      records.push({
-        'ID': id,
-        'Nombre': name,
-        'Departamento': department,
-        ...dayRecords
-      });
+      if (id || name) { // Only add record if it has at least an ID or a name
+          records.push({
+            'ID': id,
+            'Nombre': name,
+            'Departamento': department,
+            ...dayRecords
+          });
+      }
 
-      i += 2; // Skip ID row and what is assumed to be the date row
-    } else {
-      i += 1;
+      i += 1; // Increment i to skip the date row we've just processed
     }
   }
 
