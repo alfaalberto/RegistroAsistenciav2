@@ -57,7 +57,7 @@ export async function processExcel(file: File, config: ProcessConfig): Promise<R
       const deptIndex = row.findIndex(cell => typeof cell === 'string' && cell.includes('Dept. :'));
 
       const id = idIndex !== -1 && idIndex + 2 < row.length ? row[idIndex + 2] : null;
-      // Column J is index 9. The user explicitly wants the name from this column.
+      // Column J is index 9. This is where the name is.
       const name = row.length > 9 ? row[9] : null; 
       const department = deptIndex !== -1 && deptIndex + 2 < row.length ? row[deptIndex + 2] : null;
 
