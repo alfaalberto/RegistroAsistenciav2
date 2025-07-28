@@ -127,6 +127,8 @@ export async function processExcel(file: File, config: ProcessConfig): Promise<R
             } else {
                 daysWithSufficientHours++;
             }
+        } else if (hours === 'REGISTRO INCOMPLETO') {
+          daysWithInsufficientHours++;
         }
       });
 
