@@ -327,5 +327,3 @@ export default function ExcelExtractor() {
     </div>
   );
 }
-
-    
