@@ -57,10 +57,9 @@ export async function processExcel(file: File, config: ProcessConfig): Promise<R
       const nameIndex = row.findIndex(cell => typeof cell === 'string' && cell.includes('Nombre :'));
       const deptIndex = row.findIndex(cell => typeof cell === 'string' && cell.includes('Dept. :'));
 
-      const id = idIndex !== -1 && idIndex + 2 < row.length ? row[idIndex + 2] : null;
-      // The name is located two cells to the right of the "Nombre :" label.
-      const name = nameIndex !== -1 && nameIndex + 2 < row.length ? row[nameIndex + 2] : null;
-      const department = deptIndex !== -1 && deptIndex + 2 < row.length ? row[deptIndex + 2] : null;
+      const id = idIndex !== -1 && (idIndex + 2 < row.length) ? row[idIndex + 2] : null;
+      const name = nameIndex !== -1 && (nameIndex + 2 < row.length) ? row[nameIndex + 2] : null;
+      const department = deptIndex !== -1 && (deptIndex + 2 < row.length) ? row[deptIndex + 2] : null;
 
       // The next row should contain the attendance data
       const dateRow = nextRow || [];
