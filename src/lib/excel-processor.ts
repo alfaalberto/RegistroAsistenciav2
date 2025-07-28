@@ -58,7 +58,7 @@ export async function processExcel(file: File, config: ProcessConfig): Promise<R
 
       const id = idIndex !== -1 && idIndex + 2 < row.length ? row[idIndex + 2] : null;
       // Column J is index 9. This is where the name is.
-      const name = row.length > 9 ? row[9] : null; 
+      const name = row[9] || null; 
       const department = deptIndex !== -1 && deptIndex + 2 < row.length ? row[deptIndex + 2] : null;
 
       // The next row should contain the attendance data
