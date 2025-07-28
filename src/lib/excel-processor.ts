@@ -50,17 +50,15 @@ export async function processExcel(file: File, config: ProcessConfig): Promise<R
     const row = data[i];
     const nextRow = data[i+1];
 
-    const isIdRow = row.some(cell => typeof cell === 'string' && cell.includes('ID :')) && 
-                    row.some(cell => typeof cell === 'string' && cell.includes('Nombre :')) &&
-                    row.some(cell => typeof cell === 'string' && cell.includes('Dept. :'));
+    const isIdRow = row.some(cell => typeof cell === 'string' && cell.includes('ID :'));
 
     if (isIdRow) {
       const idIndex = row.findIndex(cell => typeof cell === 'string' && cell.includes('ID :'));
       const deptIndex = row.findIndex(cell => typeof cell === 'string' && cell.includes('Dept. :'));
 
       const id = idIndex !== -1 && idIndex + 2 < row.length ? row[idIndex + 2] : null;
-      // Column J is index 9
-      const name = row.length > 9 ? row[9] : null;
+      // Column J is index 9. The user explicitly wants the name from this column.
+      const name = row.length > 9 ? row[9] : null; 
       const department = deptIndex !== -1 && deptIndex + 2 < row.length ? row[deptIndex + 2] : null;
 
       // The next row should contain the attendance data
