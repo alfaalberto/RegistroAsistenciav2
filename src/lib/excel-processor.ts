@@ -105,6 +105,9 @@ export async function processExcel(file: File, config: ProcessConfig): Promise<R
       const dateRow = nextRow || [];
 
       const dayRecords: { [key: string]: any } = {};
+      let totalHours = 0;
+      let registeredDaysCount = 0;
+
       days.forEach((day, index) => {
         const dateKey = `${day}-${config.month}-${config.year}`;
         const hoursKey = `Horas-${day}`;
@@ -113,14 +116,22 @@ export async function processExcel(file: File, config: ProcessConfig): Promise<R
 
         dayRecords[dateKey] = (value !== null && value !== undefined) ? value : "";
         dayRecords[hoursKey] = hours;
+
+        if (typeof hours === 'number') {
+            totalHours += hours;
+            registeredDaysCount++;
+        }
       });
+
+      const averageHours = registeredDaysCount > 0 ? parseFloat((totalHours / registeredDaysCount).toFixed(2)) : 0;
       
       if (id || name) {
           records.push({
             'ID': id,
             'Nombre': name,
             'Departamento': department,
-            ...dayRecords
+            ...dayRecords,
+            'Horas/Día': averageHours
           });
       }
 
