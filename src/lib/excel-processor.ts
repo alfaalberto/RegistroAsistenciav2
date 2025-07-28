@@ -58,9 +58,9 @@ export async function processExcel(file: File, config: ProcessConfig): Promise<R
       const deptIndex = row.findIndex(cell => typeof cell === 'string' && cell.includes('Dept. :'));
 
       const id = idIndex !== -1 && (idIndex + 2 < row.length) ? row[idIndex + 2] : null;
-      const name = nameIndex !== -1 && (nameIndex + 3 < row.length) ? row[nameIndex + 3] : null;
+      const name = nameIndex !== -1 && (nameIndex + 1 < row.length) ? row[nameIndex + 1] : null;
       const department = deptIndex !== -1 && (deptIndex + 2 < row.length) ? row[deptIndex + 2] : null;
-
+      
       // The next row should contain the attendance data
       const dateRow = nextRow || [];
 
