@@ -107,7 +107,7 @@ export async function processExcel(file: File, config: ProcessConfig): Promise<R
         const hours = calculateHours(value);
 
         dayRecords[dateKey] = (value !== null && value !== undefined) ? value : "";
-        dayRecords[hoursKey] = (hours !== null) ? hours : "";
+        dayRecords[hoursKey] = (hours !== null) ? hours : "NO HAY REGISTRO";
       });
       
       if (id || name) {

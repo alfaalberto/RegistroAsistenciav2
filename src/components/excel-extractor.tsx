@@ -8,6 +8,7 @@ import { UploadCloud, File as FileIcon, Loader2, Download, VenetianMask } from '
 import { suggestMetadata, SuggestMetadataOutput } from '@/ai/flows/suggest-metadata';
 import { processExcel, ProcessConfig } from '@/lib/excel-processor';
 import { exportToCsv } from '@/lib/csv-utils';
+import { cn } from '@/lib/utils';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -305,7 +306,20 @@ export default function ExcelExtractor() {
                       <TableBody>
                         {extractedData.map((row, rowIndex) => (
                           <TableRow key={rowIndex}>
-                            {tableHeaders.map(header => <TableCell key={`${rowIndex}-${header}`}>{String(row[header])}</TableCell>)}
+                            {tableHeaders.map((header) => {
+                              const cellValue = row[header];
+                              const isNoRegistro = cellValue === 'NO HAY REGISTRO';
+                              return (
+                                <TableCell
+                                  key={`${rowIndex}-${header}`}
+                                  className={cn({
+                                    'text-destructive font-semibold': isNoRegistro,
+                                  })}
+                                >
+                                  {String(cellValue)}
+                                </TableCell>
+                              );
+                            })}
                           </TableRow>
                         ))}
                       </TableBody>
