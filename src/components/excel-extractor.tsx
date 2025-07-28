@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
@@ -293,7 +294,7 @@ export default function ExcelExtractor() {
                 </div>
               )}
               {!isProcessing && extractedData && (
-                <div className="w-full overflow-auto max-h-[60vh] relative">
+                <ScrollArea className="w-full whitespace-nowrap rounded-md border max-h-[60vh]">
                   <Table>
                     <TableHeader className="sticky top-0 bg-card">
                       <TableRow>
@@ -308,7 +309,8 @@ export default function ExcelExtractor() {
                       ))}
                     </TableBody>
                   </Table>
-                </div>
+                  <ScrollBar orientation="horizontal" />
+                </ScrollArea>
               )}
               {!isProcessing && !extractedData && (
                 <div className="flex flex-col items-center justify-center h-64 text-center text-muted-foreground">
@@ -325,3 +327,5 @@ export default function ExcelExtractor() {
     </div>
   );
 }
+
+    
