@@ -9,18 +9,23 @@ export function exportToCsv(data: Record<string, any>[], filename: string) {
     ...data.map(row => 
       headers.map(header => {
         const value = row[header];
+        
+        // Handle strings, numbers, and other types gracefully
         const stringValue = (value === null || value === undefined) ? '' : String(value);
-        // Escape commas and quotes
-        if (stringValue.includes(',') || stringValue.includes('"')) {
+
+        // If the value contains a comma, a quote, or a newline, wrap it in double quotes.
+        // Also, escape any existing double quotes by doubling them up.
+        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
           return `"${stringValue.replace(/"/g, '""')}"`;
         }
+
         return stringValue;
       }).join(',')
     )
   ];
 
   const csvString = csvRows.join('\n');
-  const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+  const blob = new Blob([`\uFEFF${csvString}`], { type: 'text/csv;charset=utf-8;' }); // Add BOM for Excel compatibility
   
   const link = document.createElement('a');
   if (link.download !== undefined) {
