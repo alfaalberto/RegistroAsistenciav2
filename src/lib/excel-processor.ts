@@ -108,6 +108,7 @@ export async function processExcel(file: File, config: ProcessConfig): Promise<R
       let totalHours = 0;
       let registeredDaysCount = 0;
       let daysWithInsufficientHours = 0;
+      let daysWithSufficientHours = 0;
 
       days.forEach((day, index) => {
         const dateKey = `${day}-${config.month}-${config.year}`;
@@ -123,6 +124,8 @@ export async function processExcel(file: File, config: ProcessConfig): Promise<R
             registeredDaysCount++;
             if (hours < 7.75) {
                 daysWithInsufficientHours++;
+            } else {
+                daysWithSufficientHours++;
             }
         }
       });
@@ -136,6 +139,7 @@ export async function processExcel(file: File, config: ProcessConfig): Promise<R
             'Departamento': department,
             ...dayRecords,
             'Horas/Día': averageHours,
+            'Días Cumplidos': daysWithSufficientHours,
             'Días Incumplidos': daysWithInsufficientHours,
           });
       }
