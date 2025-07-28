@@ -30,14 +30,19 @@ function cleanData(data: any[][]): any[][] {
   return filteredData;
 }
 
-function calculateHours(timeString: string | null | undefined): number | null {
+function calculateHours(timeString: string | null | undefined): number | string {
   if (!timeString || typeof timeString !== 'string') {
-    return null;
+    return 'NO HAY REGISTRO';
   }
 
   const parts = timeString.split('\n').map(p => p.trim()).filter(p => p);
-  if (parts.length < 2) {
-    return null;
+  
+  if (parts.length === 0) {
+    return 'NO HAY REGISTRO';
+  }
+  
+  if (parts.length === 1) {
+    return 'REGISTRO INCOMPLETO';
   }
 
   const timeRegex = /(\d{1,2}):(\d{2})/;
@@ -46,7 +51,7 @@ function calculateHours(timeString: string | null | undefined): number | null {
   const outMatch = parts[parts.length - 1].match(timeRegex);
 
   if (!inMatch || !outMatch) {
-    return null;
+    return 'REGISTRO INCOMPLETO';
   }
 
   const inDate = new Date();
@@ -56,7 +61,7 @@ function calculateHours(timeString: string | null | undefined): number | null {
   outDate.setHours(parseInt(outMatch[1], 10), parseInt(outMatch[2], 10), 0, 0);
 
   if (outDate <= inDate) {
-    return null;
+    return 'REGISTRO INCOMPLETO';
   }
 
   const diffMillis = outDate.getTime() - inDate.getTime();
@@ -107,7 +112,7 @@ export async function processExcel(file: File, config: ProcessConfig): Promise<R
         const hours = calculateHours(value);
 
         dayRecords[dateKey] = (value !== null && value !== undefined) ? value : "";
-        dayRecords[hoursKey] = (hours !== null) ? hours : "NO HAY REGISTRO";
+        dayRecords[hoursKey] = hours;
       });
       
       if (id || name) {
