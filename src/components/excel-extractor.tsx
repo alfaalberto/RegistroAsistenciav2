@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { UploadCloud, File as FileIcon, Loader2, Download, VenetianMask, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { UploadCloud, File as FileIcon, Loader2, Download, VenetianMask, AlertCircle, CheckCircle, Clock, Expand } from 'lucide-react';
 import { suggestMetadata, SuggestMetadataOutput } from '@/ai/flows/suggest-metadata';
 import { processExcel, ProcessConfig } from '@/lib/excel-processor';
 import { exportToCsv } from '@/lib/csv-utils';
@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -30,6 +31,55 @@ const formSchema = z.object({
 });
 
 type ExtractedData = Record<string, any>[];
+
+const DataTableView = ({ extractedData, tableHeaders, getStatusBadge }: { extractedData: ExtractedData, tableHeaders: string[], getStatusBadge: (value: any) => React.ReactNode }) => (
+  <Table>
+    <TableHeader className="sticky top-0 bg-muted z-10">
+      <TableRow>
+        {tableHeaders.map(header => <TableHead key={header} className="font-semibold text-foreground">{header}</TableHead>)}
+      </TableRow>
+    </TableHeader>
+    <TableBody>
+      {extractedData.map((row, rowIndex) => (
+        <TableRow key={rowIndex}>
+          {tableHeaders.map((header) => {
+            const cellValue = row[header];
+            const badge = getStatusBadge(cellValue);
+            
+            if (badge) {
+              return (
+                <TableCell key={`${rowIndex}-${header}`}>
+                  {badge}
+                </TableCell>
+              )
+            }
+            
+            const isHorasInsuficientes = typeof cellValue === 'number' && cellValue < 7.75;
+            const isHorasNormales = typeof cellValue === 'number' && cellValue >= 7.75;
+
+            return (
+              <TableCell
+                key={`${rowIndex}-${header}`}
+                className={cn('text-foreground', {
+                  'font-semibold text-orange-400': isHorasInsuficientes,
+                  'text-green-400': isHorasNormales,
+                })}
+              >
+                {cellValue?.toString().split('\n').map((line: string, i: number) => (
+                  <div key={i} className={cn({'flex items-center gap-1.5': cellValue?.toString().includes('\n')})}>
+                    {cellValue?.toString().includes('\n') && <CheckCircle className={cn('h-3 w-3', i === 0 ? 'text-green-500': 'text-red-500')} />}
+                    {line}
+                  </div>
+                ))}
+              </TableCell>
+            );
+          })}
+        </TableRow>
+      ))}
+    </TableBody>
+  </Table>
+);
+
 
 export default function ExcelExtractor() {
   const { toast } = useToast();
@@ -230,7 +280,7 @@ export default function ExcelExtractor() {
                         </FormItem>
                       )}
                     />
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                        <FormField
                         control={form.control}
                         name="month"
@@ -294,10 +344,40 @@ export default function ExcelExtractor() {
                 <CardDescription className="pt-1">Results from the Excel file will appear here.</CardDescription>
               </div>
               {extractedData && (
-                <Button onClick={handleExportCsv} size="sm" variant="outline">
-                  <Download className="mr-2 h-4 w-4" />
-                  Export CSV
-                </Button>
+                <div className="flex items-center gap-2">
+                   <Dialog>
+                    <DialogTrigger asChild>
+                      <Button size="sm" variant="outline">
+                        <Expand className="mr-2 h-4 w-4" />
+                        Expand View
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-7xl h-[90vh] flex flex-col">
+                      <DialogHeader>
+                        <DialogTitle>Expanded Data View</DialogTitle>
+                        <DialogDescription>
+                          A larger view of the extracted data. You can scroll horizontally and vertically.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="flex-grow overflow-hidden">
+                        <ScrollArea className="w-full h-full whitespace-nowrap rounded-md border">
+                            <DataTableView extractedData={extractedData} tableHeaders={tableHeaders} getStatusBadge={getStatusBadge} />
+                          <ScrollBar orientation="horizontal" />
+                          <ScrollBar orientation="vertical" />
+                        </ScrollArea>
+                      </div>
+                       <DialogFooter>
+                         <DialogClose asChild>
+                           <Button variant="outline">Close</Button>
+                         </DialogClose>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                  <Button onClick={handleExportCsv} size="sm" variant="outline">
+                    <Download className="mr-2 h-4 w-4" />
+                    Export CSV
+                  </Button>
+                </div>
               )}
             </CardHeader>
             <CardContent>
@@ -309,54 +389,8 @@ export default function ExcelExtractor() {
               )}
               {!isProcessing && extractedData && (
                 <ScrollArea className="w-full whitespace-nowrap rounded-md border">
-                  <div className="max-h-[70vh] overflow-auto">
-                    <Table>
-                      <TableHeader className="sticky top-0 bg-muted z-10">
-                        <TableRow>
-                          {tableHeaders.map(header => <TableHead key={header} className="font-semibold text-foreground">{header}</TableHead>)}
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {extractedData.map((row, rowIndex) => (
-                          <TableRow key={rowIndex}>
-                            {tableHeaders.map((header) => {
-                              const cellValue = row[header];
-                              const isNoRegistro = cellValue === 'NO HAY REGISTRO';
-                              const isRegistroIncompleto = cellValue === 'REGISTRO INCOMPLETO';
-                              const isHorasInsuficientes = typeof cellValue === 'number' && cellValue < 7.75;
-                              const isHorasNormales = typeof cellValue === 'number' && cellValue >= 7.75;
-
-                              const badge = getStatusBadge(cellValue);
-                              
-                              if (badge) {
-                                return (
-                                  <TableCell key={`${rowIndex}-${header}`}>
-                                    {badge}
-                                  </TableCell>
-                                )
-                              }
-                              
-                              return (
-                                <TableCell
-                                  key={`${rowIndex}-${header}`}
-                                  className={cn('text-foreground', {
-                                    'font-semibold text-orange-400': isHorasInsuficientes,
-                                    'text-green-400': isHorasNormales,
-                                  })}
-                                >
-                                  {cellValue?.toString().split('\n').map((line: string, i: number) => (
-                                    <div key={i} className={cn({'flex items-center gap-1.5': cellValue?.toString().includes('\n')})}>
-                                      {cellValue?.toString().includes('\n') && <CheckCircle className={cn('h-3 w-3', i === 0 ? 'text-green-500': 'text-red-500')} />}
-                                      {line}
-                                    </div>
-                                  ))}
-                                </TableCell>
-                              );
-                            })}
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                  <div className="max-h-[60vh] overflow-auto">
+                    <DataTableView extractedData={extractedData} tableHeaders={tableHeaders} getStatusBadge={getStatusBadge} />
                   </div>
                   <ScrollBar orientation="horizontal" />
                   <ScrollBar orientation="vertical" />
