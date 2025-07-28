@@ -30,6 +30,42 @@ function cleanData(data: any[][]): any[][] {
   return filteredData;
 }
 
+function calculateHours(timeString: string | null | undefined): number | null {
+  if (!timeString || typeof timeString !== 'string') {
+    return null;
+  }
+
+  const parts = timeString.split('\n').map(p => p.trim()).filter(p => p);
+  if (parts.length < 2) {
+    return null;
+  }
+
+  const timeRegex = /(\d{1,2}):(\d{2})/;
+  
+  const inMatch = parts[0].match(timeRegex);
+  const outMatch = parts[parts.length - 1].match(timeRegex);
+
+  if (!inMatch || !outMatch) {
+    return null;
+  }
+
+  const inDate = new Date();
+  inDate.setHours(parseInt(inMatch[1], 10), parseInt(inMatch[2], 10), 0, 0);
+  
+  const outDate = new Date();
+  outDate.setHours(parseInt(outMatch[1], 10), parseInt(outMatch[2], 10), 0, 0);
+
+  if (outDate <= inDate) {
+    return null;
+  }
+
+  const diffMillis = outDate.getTime() - inDate.getTime();
+  const diffHours = diffMillis / (1000 * 60 * 60);
+
+  return parseFloat(diffHours.toFixed(2));
+}
+
+
 export async function processExcel(file: File, config: ProcessConfig): Promise<Record<string, any>[]> {
   const buffer = await file.arrayBuffer();
   const workbook = XLSX.read(buffer, { type: 'buffer' });
@@ -61,17 +97,20 @@ export async function processExcel(file: File, config: ProcessConfig): Promise<R
       const name = nameIndex !== -1 && (nameIndex + 1 < row.length) ? row[nameIndex + 1] : null;
       const department = deptIndex !== -1 && (deptIndex + 2 < row.length) ? row[deptIndex + 2] : null;
       
-      // The next row should contain the attendance data
       const dateRow = nextRow || [];
 
       const dayRecords: { [key: string]: any } = {};
       days.forEach((day, index) => {
-        const key = `${day}-${config.month}-${config.year}`;
+        const dateKey = `${day}-${config.month}-${config.year}`;
+        const hoursKey = `Horas-${day}`;
         const value = dateRow[index];
-        dayRecords[key] = (value !== null && value !== undefined) ? value : "";
+        const hours = calculateHours(value);
+
+        dayRecords[dateKey] = (value !== null && value !== undefined) ? value : "";
+        dayRecords[hoursKey] = (hours !== null) ? hours : "";
       });
       
-      if (id || name) { // Only add record if it has at least an ID or a name
+      if (id || name) {
           records.push({
             'ID': id,
             'Nombre': name,
@@ -80,7 +119,7 @@ export async function processExcel(file: File, config: ProcessConfig): Promise<R
           });
       }
 
-      i += 1; // Increment i to skip the date row we've just processed
+      i += 1;
     }
   }
 
