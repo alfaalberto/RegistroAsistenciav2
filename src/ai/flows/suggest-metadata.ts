@@ -73,18 +73,24 @@ const suggestMetadataFlow = ai.defineFlow(
     const workbook = XLSX.read(buffer, { type: 'buffer' });
     const sheetNames = workbook.SheetNames;
 
-    const {output} = await suggestMetadataPrompt({ sheetNames });
-    // The prompt now returns only the best match, but the calling code expects all available sheets
-    // to populate the dropdown. So we will return all sheet names, but the one suggested by the AI
-    // will be the first one.
-    if(output?.suggestedSheetNames?.length > 0) {
-        const suggestedSheet = output.suggestedSheetNames[0];
-        const otherSheets = sheetNames.filter(name => name !== suggestedSheet);
-        output.suggestedSheetNames = [suggestedSheet, ...otherSheets];
+    const { output } = await suggestMetadataPrompt({ sheetNames });
+    // Ensure we always work with a valid object
+    const result = output ?? { suggestedSheetNames: [], suggestedDateFormat: '' };
+
+    let finalSuggestedSheetNames: string[];
+    if (Array.isArray(result.suggestedSheetNames) && result.suggestedSheetNames.length > 0) {
+      const suggestedSheet = result.suggestedSheetNames[0];
+      const otherSheets = sheetNames.filter((name) => name !== suggestedSheet);
+      finalSuggestedSheetNames = [suggestedSheet, ...otherSheets];
     } else {
-        output!.suggestedSheetNames = sheetNames;
+      finalSuggestedSheetNames = sheetNames;
     }
 
-    return output!;
+    const finalOutput: SuggestMetadataOutput = {
+      suggestedSheetNames: finalSuggestedSheetNames,
+      suggestedDateFormat: result.suggestedDateFormat ?? '',
+    };
+
+    return finalOutput;
   }
 );

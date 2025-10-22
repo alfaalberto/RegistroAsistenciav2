@@ -70,6 +70,68 @@ function calculateHours(timeString: string | null | undefined): number | string 
   return parseFloat(diffHours.toFixed(2));
 }
 
+function isDayToken(cell: any): boolean {
+  if (cell === null || cell === undefined) return false;
+  const s = String(cell).trim();
+  if (!/^\d{1,2}$/.test(s)) return false;
+  const n = parseInt(s, 10);
+  return n >= 1 && n <= 31;
+}
+
+function detectDayHeaderRow(data: any[][]): { headerRowIndex: number; dayToColumn: Map<string, number> } {
+  let bestIndex = -1;
+  let bestCount = -1;
+  let bestMap = new Map<string, number>();
+
+  const limit = Math.min(20, data.length);
+  for (let i = 0; i < limit; i++) {
+    const row = data[i] || [];
+    const tmpMap = new Map<string, number>();
+    let count = 0;
+    for (let j = 0; j < row.length; j++) {
+      if (isDayToken(row[j])) {
+        const key = String(parseInt(String(row[j]).trim(), 10));
+        if (!tmpMap.has(key)) {
+          tmpMap.set(key, j);
+          count++;
+        }
+      }
+    }
+    if (count > bestCount) {
+      bestCount = count;
+      bestIndex = i;
+      bestMap = tmpMap;
+    }
+  }
+
+  return { headerRowIndex: bestIndex, dayToColumn: bestMap };
+}
+
+function extractLabeledValue(row: any[], label: string, offsets: number[] = [1, 2]): string | number | null {
+  const idx = row.findIndex(cell => typeof cell === 'string' && cell.includes(label));
+  if (idx === -1) return null;
+
+  const cellVal = row[idx];
+  if (typeof cellVal === 'string') {
+    const re = new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*:?\\s*(.+)$', 'i');
+    const m = cellVal.match(re);
+    if (m && m[1]) {
+      const v = m[1].trim();
+      if (v) return v;
+    }
+  }
+
+  for (const off of offsets) {
+    const j = idx + off;
+    if (j < row.length) {
+      const v = row[j];
+      if (v !== null && v !== undefined && v !== '') {
+        return v as any;
+      }
+    }
+  }
+  return null;
+}
 
 export async function processExcel(file: File, config: ProcessConfig): Promise<Record<string, any>[]> {
   const buffer = await file.arrayBuffer();
@@ -84,6 +146,9 @@ export async function processExcel(file: File, config: ProcessConfig): Promise<R
 
   let data = cleanData(jsonData);
 
+  // Detect the header row that contains the days of the month and build a day->column map
+  const { dayToColumn } = detectDayHeaderRow(data);
+
   const records: Record<string, any>[] = [];
   const days = config.days.split(',').map(d => d.trim()).filter(d => d);
 
@@ -94,13 +159,9 @@ export async function processExcel(file: File, config: ProcessConfig): Promise<R
     const isIdRow = row.some(cell => typeof cell === 'string' && cell.includes('ID :'));
 
     if (isIdRow) {
-      const idIndex = row.findIndex(cell => typeof cell === 'string' && cell.includes('ID :'));
-      const nameIndex = row.findIndex(cell => typeof cell === 'string' && cell.includes('Nombre :'));
-      const deptIndex = row.findIndex(cell => typeof cell === 'string' && cell.includes('Dept. :'));
-
-      const id = idIndex !== -1 && (idIndex + 2 < row.length) ? row[idIndex + 2] : null;
-      const name = nameIndex !== -1 && (nameIndex + 1 < row.length) ? row[nameIndex + 1] : null;
-      const department = deptIndex !== -1 && (deptIndex + 2 < row.length) ? row[deptIndex + 2] : null;
+      const id = extractLabeledValue(row, 'ID :', [2, 1]);
+      const name = extractLabeledValue(row, 'Nombre :', [1, 2]);
+      const department = extractLabeledValue(row, 'Dept. :', [2, 1]);
       
       const dateRow = nextRow || [];
 
@@ -110,10 +171,12 @@ export async function processExcel(file: File, config: ProcessConfig): Promise<R
       let daysWithInsufficientHours = 0;
       let daysWithSufficientHours = 0;
 
-      days.forEach((day, index) => {
-        const dateKey = `${day}-${config.month}-${config.year}`;
-        const hoursKey = `Horas-${day}`;
-        const value = dateRow[index];
+      days.forEach((day) => {
+        const d = String(parseInt(day, 10));
+        const dateKey = `${d}-${config.month}-${config.year}`;
+        const hoursKey = `Horas-${d}`;
+        const colIndex = dayToColumn.get(d);
+        const value = (colIndex !== undefined && colIndex < dateRow.length) ? dateRow[colIndex] : null;
         const hours = calculateHours(value);
 
         dayRecords[dateKey] = (value !== null && value !== undefined) ? value : "";
@@ -128,6 +191,8 @@ export async function processExcel(file: File, config: ProcessConfig): Promise<R
                 daysWithSufficientHours++;
             }
         } else if (hours === 'REGISTRO INCOMPLETO') {
+          daysWithInsufficientHours++;
+        } else if (hours === 'NO HAY REGISTRO') {
           daysWithInsufficientHours++;
         }
       });

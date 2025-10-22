@@ -1,4 +1,13 @@
-function getCellClass(value: any): string {
+function getCellClass(header: string, value: any): string {
+    // Prioritize column-specific styling
+    if (header === 'Días Cumplidos') {
+        return 'dias-cumplidos';
+    }
+    if (header === 'Días Incumplidos') {
+        return 'dias-incumplidos';
+    }
+
+    // Then apply generic value-based styling
     if (typeof value === 'string') {
         if (value === 'NO HAY REGISTRO') return 'no-registro';
         if (value === 'REGISTRO INCOMPLETO') return 'registro-incompleto';
@@ -6,7 +15,7 @@ function getCellClass(value: any): string {
     if (typeof value === 'number' && value < 7.75) {
         return 'horas-insuficientes';
     }
-     if (typeof value === 'number' && value >= 7.75) {
+    if (typeof value === 'number' && value >= 7.75) {
         return 'horas-normales';
     }
     return '';
@@ -74,6 +83,20 @@ function getStyles(): string {
         .horas-normales {
             color: #4ADE80; /* text-green-400 */
         }
+        .dias-cumplidos {
+            background-color: rgba(34, 197, 94, 0.15); /* green-500 @ 15% */
+            color: #22C55E; /* text-green-500 */
+            font-weight: 700;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem; /* rounded-md */
+        }
+        .dias-incumplidos {
+            background-color: rgba(239, 68, 68, 0.15); /* red-500 @ 15% */
+            color: #EF4444; /* text-red-500 */
+            font-weight: 700;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem; /* rounded-md */
+        }
         .check-icon {
             color: #22C55E; /* text-green-500 */
             display: inline-block;
@@ -118,7 +141,7 @@ export function exportToHtml(data: Record<string, any>[], filename: string) {
     const tableRows = data.map(row => {
         const tableCells = headers.map(header => {
             const cellValue = row[header];
-            const cellClass = getCellClass(cellValue);
+            const cellClass = getCellClass(header, cellValue);
             const formattedContent = formatCellContent(cellValue);
             return `<td class="${cellClass}">${formattedContent}</td>`;
         }).join('');
